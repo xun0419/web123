@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>三個場景選擇（置中適中圖片）</title>
+  <style>
+    body {
+      background: #f8f8f8;
+      font-family: sans-serif;
+      text-align: center;
+    }
+    .scene-group {
+      display: inline-block;
+      margin: 24px 32px;
+      vertical-align: top;
+    }
+    .scene-img-btn {
+      width: 350px;
+      height: 350px;
+      border: 4px solid #ccc;
+      border-radius: 16px;
+      cursor: pointer;
+      background-size: cover;
+      background-position: center;
+      display: block;
+      transition: transform 0.2s, border-color 0.2s;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      margin-bottom: 0;
+    }
+    .scene-img-btn:hover {
+      transform: scale(1.06);
+      border-color: #888;
+    }
+    .scene-label {
+      width: 350px;
+      margin: 0 auto;
+      margin-top: 0;
+      padding: 16px 0;
+      background: #fff;
+      border: 2px solid #aaa;
+      border-radius: 0 0 14px 14px;
+      font-size: 1.3em;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    #scene-view {
+      margin-top: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      position: relative;
+    }
+    #scene-img {
+      width: 600px;
+      max-width: 90vw;
+      height: auto;
+      border: 4px solid #aaa;
+      border-radius: 12px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.12);
+      display: none;
+      background: #fff;
+      margin: 0 auto;
+      position: relative;
+    }
+    #back-btn {
+      display: none;
+      margin-bottom: 24px;
+      padding: 10px 30px;
+      font-size: 1.1em;
+      border-radius: 8px;
+      border: none;
+      background: #e0e0e0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #back-btn:hover {
+      background: #bdbdbd;
+    }
+    #highlight-mask {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #circle-highlight {
+      display: none;
+      position: absolute;
+      width: 120px; /* 調整圈圈寬度 */
+      height: 120px; /* 調整圈圈高度 */
+      border: 6px solid #ffffff; /* 調整邊框粗細 */
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 15;
+      box-shadow: 0 0 20px rgba(255,255,255,0.9), inset 0 0 20px rgba(255,255,255,0.4); /* 調整陰影效果 */
+    }
+    #items-table {
+      display: none;
+      margin-top: 30px;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    #items-table td {
+      padding: 6px;
+      border: 2px solid #ddd;
+      text-align: center;
+      vertical-align: top;
+      width: 100px;
+    }
+    .item-cell {
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.2s;
+    }
+    .item-cell:hover {
+      background-color: #f0f8ff;
+      transform: scale(1.02);
+      }
+    .item-cell.selected {
+      background-color: #e6f3ff;
+      border-color: #4a90e2;
+    }
+    .item-image {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .item-name {
+      font-weight: bold;
+      font-size: 0.8em;
+      color: #333;
+      margin-bottom: 3px;
+    }
+    .item-description {
+      font-size: 0.7em;
+      color: #666;
+      line-height: 1.1;
+    }
+    
+    /* 響應式圈圈大小調整 */
+    @media (max-width: 768px) {
+      #circle-highlight {
+        width: 80px;
+        height: 80px;
+        border: 4px solid #ffffff;
+      }
+    }
+    
+    @media (min-width: 1200px) {
+      #circle-highlight {
+        width: 150px;
+        height: 150px;
+        border: 8px solid #ffffff;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="scene-select">
+    <div class="scene-group">
+      <div class="scene-img-btn" style="background-image:url('123/客廳.jpg')" onclick="showScene('123/客廳.jpg', 'living-room')"></div>
+      <div class="scene-label">客廳</div>
+    </div>
+    <div class="scene-group">
+      <div class="scene-img-btn" style="background-image:url('123/廚房.jpg')" onclick="showScene('123/廚房.jpg', 'kitchen')"></div>
+      <div class="scene-label">廚房</div>
+    </div>
+    <div class="scene-group">
+      <div class="scene-img-btn" style="background-image:url('123/浴室.jpg')" onclick="showScene('123/浴室.jpg', 'bathroom')"></div>
+      <div class="scene-label">浴室</div>
+    </div>
+  </div>
+  <div id="scene-view" style="display:none;">
+    <button id="back-btn" onclick="backToSelect()">返回</button>
+    <div style="position: relative;">
+      <img id="scene-img" src="" alt="場景圖">
+      <div id="highlight-mask"></div>
+      <div id="circle-highlight"></div>
+    </div>
+    <table id="items-table">
+      <tr id="living-room-items" style="display:none;">
+        <td class="item-cell" onclick="selectItem('umbrella'); playPhoneSound()">
+          <img src="123/電話.jpg" alt="電話" class="item-image">
+          <div class="item-name">電話</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('remote'); playRemoteSound()">
+          <img src="123/遙控器.jpg" alt="遙控器" class="item-image">
+          <div class="item-name">遙控器</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('fan'); playFanSound()">
+          <img src="123/電扇.jpg" alt="電風扇" class="item-image">
+          <div class="item-name">電風扇</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('clock'); playClockSound()">
+          <img src="123/時鐘.jpg" alt="時鐘" class="item-image">
+          <div class="item-name">時鐘</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('tv'); playTVSound()">
+          <img src="123/電視 .jpg" alt="電視" class="item-image">
+          <div class="item-name">電視</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('sofa'); playSofaSound()">
+          <img src="123/沙發.jpg" alt="沙發" class="item-image">
+          <div class="item-name">沙發</div>
+        </td>
+      </tr>
+      <tr id="kitchen-items" style="display:none;">
+        <td class="item-cell" onclick="selectItem('stove'); playStoveSound()">
+          <img src="123/瓦斯爐.jpg" alt="瓦斯爐" class="item-image">
+          <div class="item-name">瓦斯爐</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('refrigerator'); playRefrigeratorSound()">
+          <img src="123/冰箱.jpg" alt="冰箱" class="item-image">
+          <div class="item-name">冰箱</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('kitchen-sofa'); playToyzSound()">
+          <img src="123/椅子.jpg" alt="椅子" class="item-image">
+          <div class="item-name">椅子</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('cloth'); playClothSound()">
+          <img src="123/抹布.jpg" alt="抹布" class="item-image">
+          <div class="item-name">抹布</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('sink'); playSinkSound()">
+          <img src="123/洗手台.jpg" alt="洗手台" class="item-image">
+          <div class="item-name">洗手台</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('blender'); playBlenderSound()">
+          <img src="123/果汁機.jpg" alt="果汁機" class="item-image">
+          <div class="item-name">果汁機</div>
+        </td>
+      </tr>
+      <tr id="bathroom-items" style="display:none;">
+        <td class="item-cell" onclick="selectItem('shower'); playShowerSound()">
+          <img src="123/蓮蓬頭.jpg" alt="蓮蓬頭" class="item-image">
+          <div class="item-name">蓮蓬頭</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('mirror'); playMirrorSound()">
+          <img src="123/鏡子.jpg" alt="鏡子" class="item-image">
+          <div class="item-name">鏡子</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('toothbrush'); playToothbrushound()">
+          <img src="123/牙刷.jpg" alt="牙刷" class="item-image">
+          <div class="item-name">牙刷</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('hairdryer'); playHairdryerSound()">
+          <img src="123/吹風機.jpg" alt="吹風機" class="item-image">
+          <div class="item-name">吹風機</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('bathtub'); playBathtubSound()">
+          <img src="123/浴缸.jpg" alt="浴缸" class="item-image">
+          <div class="item-name">浴缸</div>
+        </td>
+        <td class="item-cell" onclick="selectItem('toilet'); playToiletSound()">
+          <img src="123/馬桶.jpg" alt="馬桶" class="item-image">
+          <div class="item-name">馬桶</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <script>
+    const mask = document.getElementById('highlight-mask');
+    const sceneImg = document.getElementById('scene-img');
+    const sceneView = document.getElementById('scene-view');
+    const circleHighlight = document.getElementById('circle-highlight');
+    const itemsTable = document.getElementById('items-table');
+    
+    let currentScene = '';
+    let selectedItem = null;
+    let circleSize = 60; // 圈圈半徑大小（可調整）
+
+
+    // 物品資料庫 - 為不同場景設定物品位置
+    const itemDatabase = {
+      'living-room': {
+        'umbrella': [{x: 495/1200, y: 270/900, radius: 0.08}],
+        'remote': [{x: 530/1200, y: 620/900, radius: 0.06}],
+        'fan': [{x: 0.56, y: 0.70, radius: 0.25}],
+        'clock': [{x: 530/1200, y: 90/900, radius: 0.07}],
+        'tv': [{x: 0.17, y: 0.3, radius: 0.15}],
+        'sofa': [{x: 0.15, y: 0.85, radius: 0.20}]
+      },
+      'kitchen': {
+        'stove': [{x: 0.54, y: 0.35, radius: 0.10}],
+        'refrigerator': [{x: 0.7, y: 0.45, radius: 0.15}],
+        'kitchen-sofa': [{x: 0.55, y: 0.65, radius: 0.18}],
+        'cloth': [{x: 0.66, y: 0.22, radius: 0.06}],
+        'sink': [{x: 0.51, y: 0.5, radius: 0.10}],
+        'blender': [{x: 0.49, y: 0.86, radius: 0.08}]
+      },
+      'bathroom': {
+        'shower': [{x: 0.15, y: 0.15, radius: 0.10}],
+        'mirror': [{x: 0.45, y: 0.12, radius: 0.12}],
+        'toothbrush': [{x: 0.55, y: 0.25, radius: 0.06}],
+        'hairdryer': [{x: 0.77, y: 0.34, radius: 0.08}],
+        'bathtub': [{x: 0.15, y: 0.55, radius: 0.18}],
+        'toilet': [{x: 0.80, y: 0.65, radius: 0.15}]
+      }
+    };
+
+
+    // 動態調整圈圈大小的函數
+    function adjustCircleSize() {
+      const rect = sceneImg.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      
+      // 根據螢幕寬度調整圈圈大小
+      if (screenWidth < 768) {
+        circleSize = 40; // 小螢幕
+      } else if (screenWidth > 1200) {
+        circleSize = 75; // 大螢幕
+      } else {
+        circleSize = 60; // 中等螢幕
+      }
+      
+      // 更新圈圈樣式
+      circleHighlight.style.width = (circleSize * 2) + 'px';
+      circleHighlight.style.height = (circleSize * 2) + 'px';
+    }
+
+
+    // 選擇物品時直接顯示高亮
+    function selectItem(itemType) {
+      // 移除之前的選中狀態
+      document.querySelectorAll('.item-cell').forEach(cell => {
+        cell.classList.remove('selected');
+      });
+      
+      // 添加選中狀態
+      event.currentTarget.classList.add('selected');
+      selectedItem = itemType;
+      
+      // 直接顯示物品位置高亮
+      showItemLocationHighlight(itemType);
+    }
+
+
+    // 顯示物品在場景中的位置高亮
+    function showItemLocationHighlight(itemType) {
+      if (!currentScene || !itemDatabase[currentScene] || !itemDatabase[currentScene][itemType]) {
+        hideHighlight();
+        return;
+      }
+      
+      const rect = sceneImg.getBoundingClientRect();
+      const regions = itemDatabase[currentScene][itemType];
+      
+      if (regions.length > 0) {
+        const region = regions[0]; // 使用第一個位置
+        const x = region.x * rect.width;
+        const y = region.y * rect.height;
+        
+        // 調整圈圈大小
+        adjustCircleSize();
+        
+        mask.style.display = 'block';
+        mask.style.background = 'rgba(0,0,0,0.6)';
+        mask.style.width = rect.width + 'px';
+        mask.style.height = rect.height + 'px';
+        mask.style.left = '0px';
+        mask.style.top = '0px';
+        
+        circleHighlight.style.display = 'block';
+        circleHighlight.style.left = (x - circleSize) + 'px';
+        circleHighlight.style.top = (y - circleSize) + 'px';
+        
+        mask.style.maskImage = `radial-gradient(circle at ${x}px ${y}px, transparent ${circleSize}px, black ${circleSize}px)`;
+        mask.style.webkitMaskImage = `radial-gradient(circle at ${x}px ${y}px, transparent ${circleSize}px, black ${circleSize}px)`;
+      }
+    }
+
+
+    // 隱藏高亮效果
+    function hideHighlight() {
+      mask.style.display = 'none';
+      circleHighlight.style.display = 'none';
+    }
+
+
+    // 點擊圖片外部恢復正常
+    sceneView.onclick = function(e) {
+      if (e.target === sceneView) {
+        hideHighlight();
+        // 清除選中狀態
+        document.querySelectorAll('.item-cell').forEach(cell => {
+          cell.classList.remove('selected');
+        });
+        selectedItem = null;
+      }
+    };
+
+
+    // 監聽視窗大小變化
+    window.addEventListener('resize', function() {
+      if (selectedItem) {
+        showItemLocationHighlight(selectedItem);
+      }
+    });
+
+
+    function showScene(img, sceneType) {
+      currentScene = sceneType;
+      selectedItem = null;
+      document.getElementById('scene-select').style.display = 'none';
+      document.getElementById('scene-view').style.display = 'flex';
+      document.getElementById('scene-img').src = img;
+      document.getElementById('scene-img').style.display = 'block';
+      document.getElementById('back-btn').style.display = 'inline-block';
+      itemsTable.style.display = 'table';
+      
+      // 隱藏所有場景的物品列表
+      document.getElementById('living-room-items').style.display = 'none';
+      document.getElementById('kitchen-items').style.display = 'none';
+      document.getElementById('bathroom-items').style.display = 'none';
+      
+      // 根據場景顯示對應的物品列表
+      if (sceneType === 'living-room') {
+        document.getElementById('living-room-items').style.display = 'table-row';
+      } else if (sceneType === 'kitchen') {
+        document.getElementById('kitchen-items').style.display = 'table-row';
+      } else if (sceneType === 'bathroom') {
+        document.getElementById('bathroom-items').style.display = 'table-row';
+      }
+      
+      // 重置物品選擇狀態
+      document.querySelectorAll('.item-cell').forEach(cell => {
+        cell.classList.remove('selected');
+      });
+      
+      hideHighlight();
+    }
+
+
+    function backToSelect() {
+      currentScene = '';
+      selectedItem = null;
+      document.getElementById('scene-select').style.display = 'block';
+      document.getElementById('scene-view').style.display = 'none';
+      document.getElementById('scene-img').style.display = 'none';
+      document.getElementById('back-btn').style.display = 'none';
+      itemsTable.style.display = 'none';
+      hideHighlight();
+    }
+
+    // 播放電話音效
+    function playPhoneSound() {
+    const audio = document.getElementById('audio-phone');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  // 播放遙控器音效
+  function playRemoteSound() {
+    const audio = document.getElementById('audio-remote');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  // 播放電扇音效
+  function playFanSound() {
+    const audio = document.getElementById('audio-fan');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playClockSound() {
+    const audio = document.getElementById('audio-clock');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playTVSound() {
+    const audio = document.getElementById('audio-tv');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playSofaSound() {
+    const audio = document.getElementById('audio-sofa');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playStoveSound() {
+    const audio = document.getElementById('audio-stove');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playRefrigeratorSound() {
+    const audio = document.getElementById('audio-refrigerator');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playToyzSound() {
+    const audio = document.getElementById('audio-toyz');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playClothSound() {
+    const audio = document.getElementById('audio-cloth');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playSinkSound() {
+    const audio = document.getElementById('audio-sink');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playBlenderSound() {
+    const audio = document.getElementById('audio-blender');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playShowerSound() {
+    const audio = document.getElementById('audio-shower');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playMirrorSound() {
+    const audio = document.getElementById('audio-mirror');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playToothbrushound() {
+    const audio = document.getElementById('audio-toothbrush');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playHairdryerSound() {
+    const audio = document.getElementById('audio-hairdryer');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playBathtubSound() {
+    const audio = document.getElementById('audio-bathtub');
+    audio.currentTime = 0;
+    audio.play();
+  }
+
+  function playToiletSound() {
+    const audio = document.getElementById('audio-toilet');
+    audio.currentTime = 0;
+    audio.play();
+  }
+  </script>
+
+  <!-- 隱藏的音檔播放器 -->
+  <audio id="audio-phone" src="123/電話.mp3" preload="auto"></audio>
+  <audio id="audio-remote" src="123/遙控器.mp3" preload="auto"></audio>
+  <audio id="audio-fan" src="123/電風扇.mp3" preload="auto"></audio>
+  <audio id="audio-clock" src="123/時鐘.mp3" preload="auto"></audio>
+  <audio id="audio-tv" src="123/電視.mp3" preload="auto"></audio>
+  <audio id="audio-sofa" src="123/沙發.mp3" preload="auto"></audio>
+  <audio id="audio-stove" src="123/瓦斯爐.mp3" preload="auto"></audio>
+  <audio id="audio-refrigerator" src="123/冰箱.mp3" preload="auto"></audio>
+  <audio id="audio-toyz" src="123/椅子.mp3" preload="auto"></audio>
+  <audio id="audio-cloth" src="123/抹布.mp3" preload="auto"></audio>
+  <audio id="audio-sink" src="123/洗手台.mp3" preload="auto"></audio>
+  <audio id="audio-blender" src="123/果汁機.mp3" preload="auto"></audio>
+  <audio id="audio-shower" src="123/蓮蓬頭.mp3" preload="auto"></audio>
+  <audio id="audio-mirror" src="123/鏡子.mp3" preload="auto"></audio>
+  <audio id="audio-toothbrush" src="123/牙刷.mp3" preload="auto"></audio>
+  <audio id="audio-hairdryer" src="123/吹風機.mp3" preload="auto"></audio>
+  <audio id="audio-bathtub" src="123/浴缸.mp3" preload="auto"></audio>
+  <audio id="audio-toilet" src="123/馬桶.mp3" preload="auto"></audio>
+</body>
+</html>
